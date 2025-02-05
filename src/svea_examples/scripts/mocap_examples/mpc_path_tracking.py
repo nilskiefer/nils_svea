@@ -19,6 +19,7 @@ from std_msgs.msg import Float32
 from geometry_msgs.msg import PoseArray
 from svea.simulators.viz_utils import publish_pose_array
 
+from svea_msgs.msg import lli_ctrl
 
 def load_param(name, value=None):
     if value is None:
@@ -40,6 +41,7 @@ class mpc_navigation:
 
     This node is intended for path tracking using MPC as the control method. The static path should have points spaced closely enough to ensure the MPC can find a feasible solution.
     """
+    
     def __init__(self,sim_dt,mpc):
         self.dt = sim_dt
         self.mpc = mpc
@@ -56,8 +58,9 @@ class mpc_navigation:
         self.CIRCLE_CENTER_Y = load_param('~circle_center_y', 0) # Y coordinate of the circle center
         self.mpc_config_ns = load_param('~mpc_config_ns')  
         self.mpc_propagation_dt = load_param(f'{self.mpc_config_ns}/time_step') 
-        self.initial_horizon = load_param(f'{self.mpc_config_ns}/prediction_horizon')  
-
+        self.initial_horizon = load_param(f'{self.mpc_config_ns}/prediction_horizon') 
+         
+       
         ## MPC parameters 
         self.predicted_state = None
         self.mpc_last_time = 0
@@ -93,6 +96,10 @@ class mpc_navigation:
         self.create_simulator_and_SVEAmanager()
         self.init_publishers()
 
+    def remote_callback(self, msg):
+        self.remote = msg
+
+
     def run(self):
         while self.keep_alive():
             self.spin()
@@ -125,7 +132,7 @@ class mpc_navigation:
                 # Publish the predicted path
                 self.publish_trajectory(self.predicted_state[0:3, :self.current_horizon+1], self.predicted_trajectory_pub)
                 self.mpc_last_time = current_time
-
+        
         # Publish the latest control target and the estimated speed( from mocap or indoors loc. or outdoors loc.).
         self.publish_to_foxglove(self.steering, self.velocity, self.state[3])
         # Visualization data and send control
@@ -252,7 +259,7 @@ class mpc_navigation:
         is the MPC's spatial step size, and `epsilon` is a small tolerance value.   
         """
         path_length = 2 * np.pi * self.CIRCLE_RADIUS
-        ds_des = self.TARGET_SPEED * self.mpc_propagation_dt
+        ds_des = self.TARGET_SPEED  * self.mpc_propagation_dt
         self.N = int((path_length / ds_des) * 1.15)  # Add 15% buffer
         theta_values = np.linspace(-math.pi ,  math.pi , self.N, endpoint=False)
         x_values = self.CIRCLE_CENTER_X + self.CIRCLE_RADIUS * np.cos(theta_values)

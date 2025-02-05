@@ -59,6 +59,9 @@ class mpc_navigation:
         self.initial_Qf = load_param(f'{self.mpc_config_ns}/final_state_weight_matrix')  
         self.TARGET_SPEED = load_param('~target_speed', 0.5)  # Target speed. It is here for generalization, but not weighted in the optimization problem.
 
+        if(self.IS_SIM):
+            self.remote = load_param('~/lli/remote')
+            
         ## MPC parameters 
         self.GOAL_REACHED_DIST = 0.2   # The distance threshold (in meters) within which the goal is considered reached.
         self.GOAL_REACHED_YAW = 0.2    # The yaw angle threshold (in radians) within which the goal orientation is considered reached.
@@ -138,7 +141,8 @@ class mpc_navigation:
                     self.UPDATE_MPC_PARAM = True  # Allow updating again when re-approaching
                     self.RESET_MPC_PARAM = False  # Prevent repeated resetting
 
-                if  not self.is_goal_reached(distance_to_next_point):
+                if  not self.is_goal_reached(distance_to_next_point) and self.remote.ctrl == 1:
+                    rospy.loginfo("remote value " + (self.remote.ctrl)) 
                     # Run the MPC to compute control
                     steering_rate, acceleration = self.svea.controller.compute_control([self.state[0],self.state[1],self.state[2],self.velocity,self.steering], reference_trajectory)
                     self.steering += steering_rate * measured_dt

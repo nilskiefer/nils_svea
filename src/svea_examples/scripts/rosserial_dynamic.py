@@ -79,7 +79,7 @@ class DynamicSerialManager:
                 client.run()
             except (SerialException, OSError):
                 rospy.logwarn(f"Lost connection to {port}. Retrying...")
-                continue
+                break
             except:
                 rospy.loginfo(f"Shutting down client for {port}")
                 break

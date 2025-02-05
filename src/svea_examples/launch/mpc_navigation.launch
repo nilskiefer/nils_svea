@@ -10,27 +10,63 @@
     <!-- Launch file arguments -->
     <arg name="map"             default="/svea_ws/src/svea_core/maps/sml.yaml"/>  
     <arg name="use_foxglove"    default="true"/>
-    <arg name="svea_mocap_name" default="svea7"/>      <!-- name of SVEA -->    
-    <arg name="is_sim"          default="true"/>  
-    <arg name="mpc_mode"        default="goal_position"/> <!-- Options: goal_position, path_tracking -->
+    <arg name="svea_mocap_name" default="svea2"/>      <!-- name of SVEA -->    
+    <arg name="is_sim"          default="false"/>  
+    <arg name="mpc_mode"        default="path_tracking"/> <!-- Options: goal_position, path_tracking -->
+    <arg name="baud_rate" default="250000"/>
+
+    <!-- MPC parameters -->
+    <arg name="x" default="0.06"/>
+    <arg name="y" default="-0.06"/>
+    <arg name="z" default="0.0"/>
+    <arg name="roll" default="0.0"/>
+    <arg name="pitch" default="0.0"/>
+    <arg name="yaw" default="0"/>
+    <arg name="frame_id" default="mocap"/>
+    <arg name="child_frame" default="map"/>
 
     <!-- Start map server -->
     <node if="$(eval map != '')" pkg="map_server" type="map_server" name="map_server" output="screen" args="$(arg map)"/>
-
-    <!-- If is_sim equal to false, then start localization -->
-    <group unless="$(arg is_sim)">
-        <!-- Start low-level interface -->
-        <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
-            <param name="port" value="/dev/ttyACM0"/>
-            <param name="baud" value="250000"/>
-        </node>
-    </group>
 
     <!-- Start Foxglove -->
     <include if="$(eval use_foxglove)" file="$(find foxglove_bridge)/launch/foxglove_bridge.launch">
         <arg name="port" value="8765" />
     </include>
     
+    <group unless="$(arg is_sim)">
+
+        <!-- Launch the Qualisys motion capture system -->
+        <include file="$(find mocap_qualisys)/launch/qualisys.launch"/>
+
+        <!-- Launch the dynamic serial manager node -->
+        <node name="rosserial_dynamic" pkg="svea_examples" type="rosserial_dynamic.py" output="screen">
+            <param name="baud" value="$(arg baud_rate)"/>
+            <param name="scan_rate" value="1"/>
+        </node>
+
+        <!-- Start Mocap -->
+        <node pkg="svea_mocap" type="mocap_only.py" name="mocap_only" output="screen">
+                <param name="mocap_name" value="$(arg svea_mocap_name)"/>
+        </node>
+
+        <!-- Stupid transform -->
+        <include file="$(find svea_mocap)/launch/map_correction.launch">
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="yaw" value="$(arg yaw)"/>
+        <arg name="roll" value="$(arg roll)"/>
+        <arg name="pitch" value="$(arg pitch)"/>
+        <arg name="frame_id" value="$(arg frame_id)"/>
+        <arg name="child_frame" value="$(arg child_frame)"/>
+        </include>
+    </group>
+
+    
+    
+    
+        
+   
     <!-- Start main node based on MPC mode -->
     <group if="$(eval mpc_mode == 'goal_position')">
         <node name="mpc" pkg="svea_examples" type="mpc.py" output="screen">
@@ -45,6 +81,7 @@
         </node>
     </group>
 
+    <!-- Make sure to start on the circle and without the remote control -->
     <group if="$(eval mpc_mode == 'path_tracking')">
         <node name="mpc" pkg="svea_examples" type="mpc_path_tracking.py" output="screen">
             <param name="use_rviz" value="$(arg use_foxglove)"/>
