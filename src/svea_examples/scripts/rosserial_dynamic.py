@@ -18,7 +18,7 @@ class DynamicSerialManager:
         rospy.init_node("dynamic_serial_manager")
 
         # Parameters
-        self.baud_rate = load_param("~baud", 115200)
+        self.baud_rate = load_param("~baud", 250000)
         self.rate = rospy.Rate(load_param("~scan_rate", 0.1))  # Scanning interval in seconds
         
         # Active serial clients

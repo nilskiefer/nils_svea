@@ -55,6 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
    lli_emergency.msg
    VehicleState.msg
    energy_sensor.msg
+   Battery.msg
  )
 
 ## Generate services in the 'srv' folder

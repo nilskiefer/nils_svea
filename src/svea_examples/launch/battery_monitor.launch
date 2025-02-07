@@ -11,6 +11,10 @@
         <param name="scan_rate" value="1"/>
     </node>
     
+     <!-- Launch the dynamic serial manager node -->
+    <node pkg="svea_examples" type="battery.py" name="rudamentary_battery_node" output="screen"/>
+
+d
     <!-- Debugging options -->
     <arg name="enable_debug" default="false"/>
     <group if="$(arg enable_debug)">
