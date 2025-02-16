@@ -11,6 +11,9 @@
 ##      > docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 ##      > docker buildx create --use
 
+# on mac run:
+# BUILD_PLATFORM=linux/arm64 util/build
+
 . "$(dirname "$0")/config.sh"
 
 CMD="docker buildx build"
@@ -22,7 +25,6 @@ append ARGS \
     --build-arg "BUILD_TAG=$BUILD_TAG" \
     --build-arg "ROSDISTRO=$ROSDISTRO" \
     --build-arg "WORKSPACE=$WORKSPACE"
-        
 
 # Special case for TX2s that have old version of docker
 if [ "$(jetson_release)" = "R32" ]; then
@@ -32,9 +34,10 @@ else
 fi
 
 # These args are replaced if util/build is called with arguments
-if [ -z "$*" ]
-then append ARGS --tag "$IMAGE_TAG" --file "$BUILD_FILE" "$BUILD_CONTEXT"
-else append ARGS "$@"
+if [ -z "$*" ]; then
+    append ARGS --tag "$IMAGE_TAG" --file "$BUILD_FILE" "$BUILD_CONTEXT"
+else
+    append ARGS "$@"
 fi
 
 call $CMD $ARGS

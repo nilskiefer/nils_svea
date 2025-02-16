@@ -17,13 +17,15 @@ append ARGS \
     -v "/dev:/dev" \
     -v "$SHARED_VOLUME" \
     --rm \
-    --network host \
-    --privileged
+    \
+    -p 8765:8765 \
+    --privileged #--network host \
 
 # These args are replaced if util/build is called with arguments
-if [ -z "$*" ]
-then append ARGS --name "$CONTAINER_NAME" "$IMAGE_TAG"
-else append ARGS "$@"
+if [ -z "$*" ]; then
+    append ARGS --name "$CONTAINER_NAME" "$IMAGE_TAG"
+else
+    append ARGS "$@"
 fi
 
 call $CMD $ARGS
